@@ -16,7 +16,7 @@ export const registerSchema = z.object({
     .min(3, "Display name must be at least 3 characters long")
     .max(30, "Display name must be at most 30 characters long"),
   phoneNumber: phoneNumberSchema,
-  password: passwordSchema,
+  password: passwordSchema.optional(),
 });
 
 export type RegisterSchema = z.infer<typeof registerSchema>;

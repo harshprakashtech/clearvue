@@ -30,25 +30,3 @@ export const otpSchema = z
   .string()
   .length(6, "OTP must be 6 characters long.")
   .regex(/^[a-zA-Z0-9]+$/, "OTP must contain only numbers and letters."); // Alphanumeric
-
-// --- Address Schema ---
-export const addressSchema = z.object({
-  street: z.string().min(1, {
-    message: "Street is required in address.",
-  }),
-  city: z.string().min(1, {
-    message: "City is required in address.",
-  }),
-  state: z.string().min(1, {
-    message: "State is required in address.",
-  }),
-  zipCode: z.string().min(1, {
-    message: "Zip code is required in address.",
-  }),
-  country: z.string().min(1, {
-    message: "Country is required in address.",
-  }),
-});
-
-// --- Schema Types ---
-export type AddressSchema = z.infer<typeof addressSchema>;

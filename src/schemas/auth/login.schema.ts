@@ -18,7 +18,7 @@ export const loginSchema = z
   .object({
     email: emailSchema.optional(),
     phoneNumber: phoneNumberSchema.optional(),
-    password: passwordSchema,
+    password: passwordSchema.optional(),
   })
   .refine((data) => data.email || data.phoneNumber, {
     message: "Either email or phone number must be provided.",

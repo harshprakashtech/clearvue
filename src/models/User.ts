@@ -16,14 +16,16 @@ interface IUser extends Document {
   otp?: string;
   otpExpiresAt?: Date;
   address?: {
+    houseNumber: string;
     street: string;
+    landmark?: string;
     city: string;
     state: string;
     zipCode: string;
     country: string;
   };
   avatar?: string; // Cloudinary URL
-  passwordHash: string; // bcrypt hashed password
+  passwordHash?: string; // bcrypt hashed password (optional)
   role: "user" | "admin";
   refreshToken?: string;
   accessToken?: string;
@@ -41,7 +43,6 @@ const UserSchema: Schema<IUser> = new Schema(
       type: String,
       trim: true,
       lowercase: true,
-      required: [true, "Email is required."],
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
         "Please enter a valid email address.",
@@ -69,7 +70,9 @@ const UserSchema: Schema<IUser> = new Schema(
       type: Date,
     },
     address: {
+      houseNumber: { type: String, trim: true },
       street: { type: String, trim: true },
+      landmark: { type: String, trim: true },
       city: { type: String, trim: true },
       state: { type: String, trim: true },
       zipCode: { type: String, trim: true },
@@ -80,7 +83,6 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     passwordHash: {
       type: String,
-      required: true,
     },
     role: {
       type: String,
@@ -98,7 +100,7 @@ const UserSchema: Schema<IUser> = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const User =
