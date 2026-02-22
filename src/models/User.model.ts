@@ -24,7 +24,7 @@ interface IUser extends Document {
     zipCode: string;
     country: string;
   };
-  avatar?: string; // Cloudinary URL
+  avatar?: string; // Cloud URL
   passwordHash?: string; // bcrypt hashed password (optional)
   role: "user" | "admin";
   refreshToken?: string;
@@ -79,7 +79,7 @@ const UserSchema: Schema<IUser> = new Schema(
       country: { type: String, trim: true },
     },
     avatar: {
-      type: String, // Cloudinary URL
+      type: String, // Cloud URL
     },
     passwordHash: {
       type: String,
