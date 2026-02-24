@@ -13,8 +13,8 @@ import { passwordSchema, phoneNumberSchema } from "./definations.schema";
 export const registerSchema = z.object({
   displayName: z
     .string()
-    .min(3, "Display name must be at least 3 characters long")
-    .max(30, "Display name must be at most 30 characters long"),
+    .min(3, "Zod ERR: Display name must be at least 3 characters long")
+    .max(30, "Zod ERR: Display name must be at most 30 characters long"),
   phoneNumber: phoneNumberSchema,
   password: passwordSchema.optional(),
 });

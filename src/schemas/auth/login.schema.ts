@@ -21,7 +21,7 @@ export const loginSchema = z
     password: passwordSchema.optional(),
   })
   .refine((data) => data.email || data.phoneNumber, {
-    message: "Either email or phone number must be provided.",
+    message: "Zod ERR: Either email or phone number must be provided.",
     path: ["identifier"], //
   });
 

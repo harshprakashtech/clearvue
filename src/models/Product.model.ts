@@ -37,6 +37,7 @@ const ProductSchema: Schema<IProduct> = new Schema(
     category: {
       type: String,
       trim: true,
+      lowercase: true,
       required: [true, "Product category is required."],
     },
     genderCategory: {

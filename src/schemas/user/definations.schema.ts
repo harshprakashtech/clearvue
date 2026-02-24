@@ -9,23 +9,23 @@ import { z } from "zod";
 // --- Address Schema ---
 export const addressSchema = z.object({
   houseNumber: z.string().min(1, {
-    message: "House number is required in address.",
+    message: "Zod ERR: House number is required in address.",
   }),
   street: z.string().min(1, {
-    message: "Street is required in address.",
+    message: "Zod ERR: Street is required in address.",
   }),
   landmark: z.string().optional(),
   city: z.string().min(1, {
-    message: "City is required in address.",
+    message: "Zod ERR: City is required in address.",
   }),
   state: z.string().min(1, {
-    message: "State is required in address.",
+    message: "Zod ERR: State is required in address.",
   }),
   zipCode: z.string().min(1, {
-    message: "Zip code is required in address.",
+    message: "Zod ERR: Zip code is required in address.",
   }),
   country: z.string().min(1, {
-    message: "Country is required in address.",
+    message: "Zod ERR: Country is required in address.",
   }),
 });
 
