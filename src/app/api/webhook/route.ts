@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 
+// Utils
+import connectDB from "@/lib/db";
+
+// Models
+import User from "@/models/User.model";
+
 /**
  * --- WhatsApp API Webhooks ---
  *
@@ -57,7 +63,34 @@ export async function POST(request: Request) {
             const messageText = msg.text?.body;
 
             console.log(`Received message from ${senderPhone}: ${messageText}`);
-            // TODO: Process message
+
+            if (
+              messageText &&
+              messageText.startsWith("Verify my Clearvue account: ")
+            ) {
+              try {
+                await connectDB();
+                const token = messageText
+                  .replace("Verify my Clearvue account: ", "")
+                  .trim();
+
+                const user = await User.findOne({ verificationToken: token });
+                if (user) {
+                  user.isVerified = true;
+                  user.verificationToken = undefined;
+                  await user.save();
+                  console.log(
+                    `User ${user.displayName} verified successfully via WhatsApp!`,
+                  );
+                } else {
+                  console.log(
+                    `Verification failed: Token ${token} not found or expired.`,
+                  );
+                }
+              } catch (dbError) {
+                console.error("Error verifying user in DB:", dbError);
+              }
+            }
           }
         }
       }

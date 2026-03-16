@@ -26,12 +26,3 @@ export const passwordSchema = z
   .max(32, {
     message: "Zod ERR: Password must be at most 32 characters long.",
   });
-
-// --- OTP Schema ---
-export const otpSchema = z
-  .string()
-  .length(6, "Zod ERR: OTP must be 6 characters long.")
-  .regex(
-    /^[a-zA-Z0-9]+$/,
-    "Zod ERR: OTP must contain only numbers and letters.",
-  ); // Alphanumeric

@@ -13,8 +13,7 @@ interface IUser extends Document {
   email?: string;
   phoneNumber: string;
   isVerified: boolean;
-  otp?: string;
-  otpExpiresAt?: Date;
+  verificationToken?: string;
   address?: {
     houseNumber: string;
     street: string;
@@ -60,14 +59,8 @@ const UserSchema: Schema<IUser> = new Schema(
       type: Boolean,
       default: false,
     },
-    otp: {
+    verificationToken: {
       type: String,
-      trim: true,
-      uppercase: true,
-      match: [/^\d{6}$/, "Please enter a valid OTP."], // 6 digits
-    },
-    otpExpiresAt: {
-      type: Date,
     },
     address: {
       houseNumber: { type: String, trim: true },
