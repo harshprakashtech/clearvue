@@ -1,3 +1,5 @@
+import axios from "axios";
+import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
 // Utils
@@ -40,6 +42,105 @@ export async function GET(req: Request) {
   }
 }
 
+// Handle Register Verification
+async function handleRegisterVerification(
+  messageText: string,
+  senderPhone: string,
+) {
+  try {
+    await connectDB();
+
+    const token = messageText
+      .replace("Verify my Clearvue account: ", "")
+      .trim();
+
+    // Find user by verification token
+    const user = await User.findOne({ verificationToken: token });
+
+    if (user) {
+      user.isVerified = true;
+      user.verificationToken = undefined;
+      await user.save();
+
+      console.log(
+        `User ${user.displayName} verified successfully via WhatsApp!`,
+      );
+    } else {
+      console.log(`Verification failed: Token ${token} not found or expired.`);
+    }
+  } catch (dbError) {
+    console.error("Webhook Error: Error verifying user in DB:", dbError);
+  }
+}
+
+// Handle Login Verification
+async function handleLoginVerification(
+  messageText: string,
+  senderPhone: string,
+) {
+  try {
+    await connectDB();
+
+    const token = messageText.replace("Login to Clearvue: ", "").trim();
+
+    // Find user by login token
+    const user = await User.findOne({
+      loginToken: token,
+      loginTokenExpiresAt: { $gt: new Date() }, // Must not be expired
+    });
+
+    if (user) {
+      // Generate an Exchange Token
+      const jwtSecret = process.env.JWT_SECRET as string;
+
+      const exchangeToken = jwt.sign(
+        { userId: user._id, type: "magic-link" },
+        jwtSecret,
+        { expiresIn: "2m" }, // Valid for 2 minutes
+      );
+
+      await User.findByIdAndUpdate(user._id, {
+        $unset: { loginToken: "", loginTokenExpiresAt: "" },
+      });
+
+      // Determine App URL
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+      const magicURL = `${appUrl}/auth/callback?token=${exchangeToken}`;
+      const replyText = `Successfully Verified! Click here to login securely: ${magicURL}\n\nThis link will expire in 2 minutes.`;
+
+      // Send message back to user via Meta API
+      const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
+      const PHONE_ID = process.env.META_PHONE_NUMBER_ID;
+
+      await axios.post(
+        `https://graph.facebook.com/v19.0/${PHONE_ID}/messages`,
+        {
+          messaging_product: "whatsapp",
+          to: senderPhone,
+          type: "text",
+          text: { body: replyText },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      console.log(`User ${user.displayName} logic magic link sent!`);
+    } else {
+      console.log(`Login failed: Token ${token} not found or expired.`);
+    }
+  } catch (dbError) {
+    console.error(
+      "Webhook Error: Error parsing login verification in DB:",
+      dbError,
+    );
+  }
+}
+
 /**
  * --- POST Request API ---
  *
@@ -59,40 +160,17 @@ export async function POST(request: Request) {
             const msg = change.value.messages[0];
 
             const senderPhone = msg.from;
-
             const messageText = msg.text?.body;
 
             console.log(`Received message from ${senderPhone}: ${messageText}`);
 
-            if (
-              messageText &&
-              messageText.startsWith("Verify my Clearvue account: ")
-            ) {
-              try {
-                await connectDB();
-                const token = messageText
-                  .replace("Verify my Clearvue account: ", "")
-                  .trim();
-
-                const user = await User.findOne({ verificationToken: token });
-                if (user) {
-                  user.isVerified = true;
-                  user.verificationToken = undefined;
-                  await user.save();
-                  console.log(
-                    `User ${user.displayName} verified successfully via WhatsApp!`,
-                  );
-                } else {
-                  console.log(
-                    `Verification failed: Token ${token} not found or expired.`,
-                  );
-                }
-              } catch (dbError) {
-                console.error(
-                  "Webhook Error: Error verifying user in DB:",
-                  dbError,
-                );
-              }
+            // Handle register verification messages
+            if (messageText?.startsWith("Verify my Clearvue account: ")) {
+              await handleRegisterVerification(messageText, senderPhone);
+            }
+            // Handle login verification messages
+            else if (messageText?.startsWith("Login to Clearvue: ")) {
+              await handleLoginVerification(messageText, senderPhone);
             }
           }
         }

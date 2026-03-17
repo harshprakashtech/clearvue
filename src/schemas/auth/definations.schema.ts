@@ -14,7 +14,7 @@ export const emailSchema = z
 // --- Phone Number Schema ---
 export const phoneNumberSchema = z
   .string()
-  .length(10, "Zod ERR: Phone number must be 10 characters long.");
+  .length(10, "Zod ERR: Phone number must be exactly 10 characters long.");
 
 // --- Password Schema ---
 // Password is not hashed here, it is raw string sent by user

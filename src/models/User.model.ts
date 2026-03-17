@@ -13,7 +13,9 @@ interface IUser extends Document {
   email?: string;
   phoneNumber: string;
   isVerified: boolean;
-  verificationToken?: string;
+  verificationToken?: string; // Phone number registration verification token
+  loginToken?: string; // Login token for OTP login
+  loginTokenExpiresAt?: Date; // Login token expiration time
   address?: {
     houseNumber: string;
     street: string;
@@ -51,7 +53,7 @@ const UserSchema: Schema<IUser> = new Schema(
     phoneNumber: {
       type: String,
       trim: true,
-      match: [/^\d{10}$/, "Please enter a valid phone number."], // 10 digits
+      match: [/^\d{10}$/, "Please enter a valid 10-digit phone number."], // 10 digits
       required: [true, "Phone number is required."],
       unique: true,
     },
@@ -61,6 +63,12 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     verificationToken: {
       type: String,
+    },
+    loginToken: {
+      type: String,
+    },
+    loginTokenExpiresAt: {
+      type: Date,
     },
     address: {
       houseNumber: { type: String, trim: true },
