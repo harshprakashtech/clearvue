@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 // Utils
 import connectDB from "@/lib/db";
 
+// Schemas
+import { registerSchema } from "@/schemas/auth/register.schema";
+
 // Models
 import User from "@/models/User.model";
 /**
@@ -16,15 +19,19 @@ import User from "@/models/User.model";
  */
 export async function POST(request: Request) {
   try {
-    await connectDB();
-    const { displayName, phoneNumber, password } = await request.json();
+    const body = await request.json();
+    const result = registerSchema.safeParse(body); // Zod validation
 
-    if (!displayName || !phoneNumber) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Display name and phone number are required" },
+        { error: result.error.issues[0].message, details: result.error.issues },
         { status: 400 },
       );
     }
+
+    const { displayName, phoneNumber, password } = result.data;
+
+    await connectDB();
 
     // Check if the user already exists
     let user = await User.findOne({ phoneNumber });
@@ -32,7 +39,10 @@ export async function POST(request: Request) {
     if (user) {
       if (user.isVerified) {
         return NextResponse.json(
-          { error: "A user with this phone number is already verified." },
+          {
+            error:
+              "Register Init Error: A user with this phone number is already verified.",
+          },
           { status: 400 },
         );
       }
@@ -82,8 +92,8 @@ export async function POST(request: Request) {
       verificationToken,
       waLink,
     });
-  } catch (error: any) {
-    console.error("Register Init Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: any) {
+    console.error("Register Init Error. ERR: ", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

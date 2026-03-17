@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     // Check if phone number is provided
     if (!phoneNumber) {
       return NextResponse.json(
-        { error: "Phone number required" },
+        { error: "Check Verification Error: Phone number required" },
         { status: 400 },
       );
     }
@@ -25,7 +25,10 @@ export async function GET(request: Request) {
     const user = await User.findOne({ phoneNumber });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Check Verification Error: User not found" },
+        { status: 404 },
+      );
     }
 
     // Check if user is verified
@@ -34,8 +37,8 @@ export async function GET(request: Request) {
     } else {
       return NextResponse.json({ isVerified: false });
     }
-  } catch (error: any) {
-    console.error("Check Verification Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: any) {
+    console.error("Check Verification Error. ERR: ", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

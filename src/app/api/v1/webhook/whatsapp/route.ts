@@ -88,7 +88,10 @@ export async function POST(request: Request) {
                   );
                 }
               } catch (dbError) {
-                console.error("Error verifying user in DB:", dbError);
+                console.error(
+                  "Webhook Error: Error verifying user in DB:",
+                  dbError,
+                );
               }
             }
           }
