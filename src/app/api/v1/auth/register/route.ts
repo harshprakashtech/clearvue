@@ -1,9 +1,12 @@
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { NextResponse } from "next/server";
 
 // Utils
 import connectDB from "@/lib/db";
+import { generateHexCode } from "@/utils/codeGenerator.util";
+
+// Message Templates
+import { getRegisterTemplate } from "@/messages/register.message";
 
 // Schemas
 import { registerSchema } from "@/schemas/auth/register.schema";
@@ -71,8 +74,8 @@ export async function POST(request: Request) {
       });
     }
 
-    // Generate secure token
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    // Generate a 12-character formatted secure token (e.g. A4B9-8F2D-C3E1)
+    const verificationToken = generateHexCode();
 
     user.verificationToken = verificationToken;
     await user.save();
@@ -80,11 +83,10 @@ export async function POST(request: Request) {
     // Generate WhatsApp verification link
     const botNumber = process.env.META_PHONE_NUMBER;
 
-    const encodedMessage = encodeURIComponent(
-      `Verify my Clearvue account: ${verificationToken}`,
-    );
+    const messageTemplate = getRegisterTemplate(verificationToken);
+    const encodedMessage = encodeURIComponent(messageTemplate);
 
-    const waLink = `https://wa.me/${botNumber}?text=${encodedMessage}`; // TODO: Add a proper template message
+    const waLink = `https://wa.me/${botNumber}?text=${encodedMessage}`;
 
     // Return the verification token and WhatsApp link
     return NextResponse.json({

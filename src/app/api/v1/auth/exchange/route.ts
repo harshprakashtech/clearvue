@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 // Utils
 import connectDB from "@/lib/db";
-import { setAuthCookies } from "@/utils/cookies";
+import { setAuthCookies } from "@/utils/cookies.util";
 
 // Models
 import User from "@/models/User.model";
@@ -29,36 +29,25 @@ export async function POST(request: Request) {
 
     const jwtSecret = process.env.JWT_SECRET as string;
 
-    // Verify token
-    let decoded: any;
+    await connectDB();
 
-    try {
-      decoded = jwt.verify(token, jwtSecret);
-    } catch (err) {
+    // Find user by magicToken
+    const user = await User.findOne({
+      magicToken: token,
+      magicTokenExpiresAt: { $gt: new Date() }, // Token must not be expired
+    });
+
+    if (!user) {
       return NextResponse.json(
         { error: "Exchange Error: Invalid or expired token" },
         { status: 401 },
       );
     }
 
-    if (decoded.type !== "magic-link") {
-      return NextResponse.json(
-        { error: "Exchange Error: Invalid token type" },
-        { status: 400 },
-      );
-    }
-
-    await connectDB();
-
-    // Find user by ID
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Exchange Error: User not found" },
-        { status: 404 },
-      );
-    }
+    // Immediately burn the token so it cannot be used again
+    await User.findByIdAndUpdate(user._id, {
+      $unset: { magicToken: "", magicTokenExpiresAt: "" },
+    });
 
     // Generate Long-Lived Tokens
     const accessToken = jwt.sign(

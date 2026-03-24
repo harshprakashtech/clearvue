@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -7,6 +6,10 @@ import { phoneNumberSchema } from "@/schemas/auth/definations.schema";
 
 // Utils
 import connectDB from "@/lib/db";
+import { generateHexCode } from "@/utils/codeGenerator.util";
+
+// Message Templates
+import { getLoginTemplate } from "@/messages/login.message";
 
 // Models
 import User from "@/models/User.model";
@@ -48,8 +51,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate short-lived secure token for the OTP login process
-    const loginToken = crypto.randomBytes(32).toString("hex");
+    // Generate a 12-character formatted secure token (e.g. A4B9-8F2D-C3E1) for the OTP login process
+    const loginToken = generateHexCode();
 
     user.loginToken = loginToken;
     user.loginTokenExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
@@ -59,9 +62,8 @@ export async function POST(request: Request) {
     // Generate WhatsApp verification link
     const botNumber = process.env.META_PHONE_NUMBER;
 
-    const encodedMessage = encodeURIComponent(
-      `Login to Clearvue: ${loginToken}`,
-    );
+    const messageTemplate = getLoginTemplate(loginToken);
+    const encodedMessage = encodeURIComponent(messageTemplate);
 
     const waLink = `https://wa.me/${botNumber}?text=${encodedMessage}`;
 

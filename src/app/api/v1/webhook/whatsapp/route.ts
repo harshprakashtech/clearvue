@@ -1,9 +1,12 @@
-import axios from "axios";
-import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
 // Utils
 import connectDB from "@/lib/db";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { generateHexCode } from "@/utils/codeGenerator.util";
+
+// Message Templates
+import { getMagicLinkTemplate } from "@/messages/magicLink.message";
 
 // Models
 import User from "@/models/User.model";
@@ -50,9 +53,10 @@ async function handleRegisterVerification(
   try {
     await connectDB();
 
-    const token = messageText
-      .replace("Verify my Clearvue account: ", "")
-      .trim();
+    const codeMatch = messageText.match(
+      /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i,
+    );
+    const token = codeMatch ? codeMatch[1].toUpperCase() : "";
 
     // Find user by verification token
     const user = await User.findOne({ verificationToken: token });
@@ -81,7 +85,10 @@ async function handleLoginVerification(
   try {
     await connectDB();
 
-    const token = messageText.replace("Login to Clearvue: ", "").trim();
+    const codeMatch = messageText.match(
+      /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i,
+    );
+    const token = codeMatch ? codeMatch[1].toUpperCase() : "";
 
     // Find user by login token
     const user = await User.findOne({
@@ -90,16 +97,12 @@ async function handleLoginVerification(
     });
 
     if (user) {
-      // Generate an Exchange Token
-      const jwtSecret = process.env.JWT_SECRET as string;
-
-      const exchangeToken = jwt.sign(
-        { userId: user._id, type: "magic-link" },
-        jwtSecret,
-        { expiresIn: "2m" }, // Valid for 2 minutes
-      );
+      // Generate a Stateful Short Magic Token (12 characters formatted)
+      const exchangeToken = generateHexCode();
+      const magicTokenExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
       await User.findByIdAndUpdate(user._id, {
+        $set: { magicToken: exchangeToken, magicTokenExpiresAt },
         $unset: { loginToken: "", loginTokenExpiresAt: "" },
       });
 
@@ -107,27 +110,10 @@ async function handleLoginVerification(
       const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
       const magicURL = `${appUrl}/auth/callback?token=${exchangeToken}`;
-      const replyText = `Successfully Verified! Click here to login securely: ${magicURL}\n\nThis link will expire in 2 minutes.`;
+      const replyText = getMagicLinkTemplate(magicURL);
 
-      // Send message back to user via Meta API
-      const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
-      const PHONE_ID = process.env.META_PHONE_NUMBER_ID;
-
-      await axios.post(
-        `https://graph.facebook.com/v19.0/${PHONE_ID}/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: senderPhone,
-          type: "text",
-          text: { body: replyText },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      // Send message back to user via Meta API using the centralized utility
+      await sendWhatsAppMessage(senderPhone, replyText);
 
       console.log(`User ${user.displayName} logic magic link sent!`);
     } else {
@@ -165,11 +151,11 @@ export async function POST(request: Request) {
             console.log(`Received message from ${senderPhone}: ${messageText}`);
 
             // Handle register verification messages
-            if (messageText?.startsWith("Verify my Clearvue account: ")) {
+            if (messageText?.includes("Clearvue Registration")) {
               await handleRegisterVerification(messageText, senderPhone);
             }
             // Handle login verification messages
-            else if (messageText?.startsWith("Login to Clearvue: ")) {
+            else if (messageText?.includes("Clearvue Login")) {
               await handleLoginVerification(messageText, senderPhone);
             }
           }

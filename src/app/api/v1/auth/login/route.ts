@@ -7,7 +7,7 @@ import { loginSchema } from "@/schemas/auth/login.schema";
 
 // Utils
 import connectDB from "@/lib/db";
-import { setAuthCookies } from "@/utils/cookies";
+import { setAuthCookies } from "@/utils/cookies.util";
 
 // Models
 import User from "@/models/User.model";
