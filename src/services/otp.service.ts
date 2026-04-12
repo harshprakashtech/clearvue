@@ -1,7 +1,10 @@
 import bcrypt from "bcryptjs";
 
 // Types
-import { PhoneNumberType } from "@/schemas/auth/definations.schema";
+import {
+  PhoneNumberType,
+  phoneNumberSchema,
+} from "@/schemas/auth/definations.schema";
 
 // Utils
 import { generateHexCode } from "@/utils/codeGenerator.util";
@@ -21,6 +24,18 @@ import User from "@/models/User.model";
  */
 
 /**
+ * Helper to normalize phone numbers to a 10-digit format for consistent matching.
+ * Strips non-digits and returns the last 10 characters.
+ */
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  const normalized = digits.slice(-10);
+
+  // Validate utilizing the Zod schema to ensure it's exactly 10 digits
+  return phoneNumberSchema.parse(normalized);
+}
+
+/**
  * Generates OTP for a given phone number and type and stores hashed OTP in the database
  */
 export async function generateOtp(
@@ -28,31 +43,34 @@ export async function generateOtp(
   type: "registration" | "login",
 ): Promise<string> {
   try {
+    const normalizedPhone = normalizePhone(phoneNumber);
+
     // Check if user exists for login
     if (type === "login") {
-      const user = await User.findOne({ phoneNumber });
+      const user = await User.findOne({ phoneNumber: normalizedPhone });
       if (!user) throw new Error("User not found");
-      if (!user.isVerified) throw new Error("User is not verified. Please register first.");
+      if (!user.isVerified)
+        throw new Error("User is not verified. Please register first.");
     }
 
     // Delete any old pending OTPs for this phone and type to keep DB clean
-    await Otp.deleteMany({ phoneNumber, type });
+    await Otp.deleteMany({ phoneNumber: normalizedPhone, type });
 
     const plainOtp: string = generateHexCode();
     const hashedOtp: string = await bcrypt.hash(plainOtp, 10);
 
     // Get user id if exists
-    const user = await User.findOne({ phoneNumber });
+    const user = await User.findOne({ phoneNumber: normalizedPhone });
 
     await Otp.create({
       user: user?._id,
-      phoneNumber,
+      phoneNumber: normalizedPhone,
       hashedOtp,
       type,
       isVerified: false,
     });
 
-    console.info(`OTP generated successfully for ${phoneNumber}`);
+    console.info(`OTP generated successfully for ${normalizedPhone}`);
     return plainOtp;
   } catch (err) {
     if (err instanceof Error) throw new Error(err.message);
@@ -68,12 +86,11 @@ export async function verifyIncomingOtp(
   plainOtp: string,
 ): Promise<boolean> {
   try {
-    // WhatsApp 'from' often has country code, need to normalize if necessary.
-    // Assuming phoneNumber in DB matches senderPhone format.
-    
-    // Find all active (not expired) OTPs for this phone number
+    const normalizedSender = normalizePhone(senderPhone);
+
+    // Find all active OTPs for this phone number
     const activeOtps = await Otp.find({
-      phoneNumber: { $regex: senderPhone }, // flexible match for country codes
+      phoneNumber: normalizedSender,
       isVerified: false,
       expiresAt: { $gt: new Date() },
     });
@@ -89,7 +106,7 @@ export async function verifyIncomingOtp(
 
     return false;
   } catch (err) {
-    console.error("verifyIncomingOtp Error:", err);
+    console.error("Verify OTP Error. ERR:", err);
     return false;
   }
 }
@@ -102,8 +119,10 @@ export async function checkVerificationStatus(
   type: "registration" | "login",
 ) {
   try {
+    const normalizedPhone = normalizePhone(phoneNumber);
+
     const otp = await Otp.findOne({
-      phoneNumber,
+      phoneNumber: normalizedPhone,
       type,
       isVerified: true,
       expiresAt: { $gt: new Date() },
@@ -138,7 +157,7 @@ export async function checkVerificationStatus(
       },
     };
   } catch (err) {
-    console.error("checkVerificationStatus Error:", err);
+    console.error("Check Verification Status Error. ERR:", err);
     throw err;
   }
 }
