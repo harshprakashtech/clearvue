@@ -30,4 +30,4 @@ export const addressSchema = z.object({
 });
 
 // --- Schema Types ---
-export type AddressSchema = z.infer<typeof addressSchema>;
+export type AddressType = z.infer<typeof addressSchema>;

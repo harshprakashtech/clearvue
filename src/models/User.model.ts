@@ -13,11 +13,6 @@ interface IUser extends Document {
   email?: string;
   phoneNumber: string;
   isVerified: boolean;
-  verificationToken?: string; // Phone number registration verification token
-  loginToken?: string; // Login token for OTP login
-  loginTokenExpiresAt?: Date; // Login token expiration time
-  magicToken?: string; // Short token for magic link exchange
-  magicTokenExpiresAt?: Date; // Expiration time for magic link
   address?: {
     houseNumber: string;
     street: string;
@@ -62,21 +57,6 @@ const UserSchema: Schema<IUser> = new Schema(
     isVerified: {
       type: Boolean,
       default: false,
-    },
-    verificationToken: {
-      type: String,
-    },
-    loginToken: {
-      type: String,
-    },
-    loginTokenExpiresAt: {
-      type: Date,
-    },
-    magicToken: {
-      type: String,
-    },
-    magicTokenExpiresAt: {
-      type: Date,
     },
     address: {
       houseNumber: { type: String, trim: true },

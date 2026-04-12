@@ -3,13 +3,15 @@ import { NextResponse } from "next/server";
 // Utils
 import connectDB from "@/lib/db";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
-import { generateHexCode } from "@/utils/codeGenerator.util";
-
-// Message Templates
-import { getMagicLinkTemplate } from "@/messages/magicLink.message";
 
 // Models
 import User from "@/models/User.model";
+
+// Message Templates
+import { getLoginAckTemplate, getRegisterAckTemplate } from "@/messages/ack.message";
+
+// Services
+import { verifyIncomingOtp } from "@/services/otp.service";
 
 /**
  * --- WhatsApp API Webhooks ---
@@ -58,22 +60,23 @@ async function handleRegisterVerification(
     );
     const token = codeMatch ? codeMatch[1].toUpperCase() : "";
 
-    // Find user by verification token
-    const user = await User.findOne({ verificationToken: token });
+    // Verify OTP
+    const isVerified = await verifyIncomingOtp(senderPhone, token);
 
-    if (user) {
-      user.isVerified = true;
-      user.verificationToken = undefined;
-      await user.save();
-
-      console.log(
-        `User ${user.displayName} verified successfully via WhatsApp!`,
+    if (isVerified) {
+      console.info(
+        `User with phone ${senderPhone} verified successfully via WhatsApp!`,
       );
+
+      const replyText = getRegisterAckTemplate();
+      await sendWhatsAppMessage(senderPhone, replyText);
     } else {
-      console.log(`Verification failed: Token ${token} not found or expired.`);
+      console.warn(
+        `Verification failed for ${senderPhone}: Token not found or expired.`,
+      );
     }
-  } catch (dbError) {
-    console.error("Webhook Error: Error verifying user in DB:", dbError);
+  } catch (error) {
+    console.error("Webhook Error: Error verifying registration in DB:", error);
   }
 }
 
@@ -90,39 +93,23 @@ async function handleLoginVerification(
     );
     const token = codeMatch ? codeMatch[1].toUpperCase() : "";
 
-    // Find user by login token
-    const user = await User.findOne({
-      loginToken: token,
-      loginTokenExpiresAt: { $gt: new Date() }, // Must not be expired
-    });
+    // Verify via service
+    const isVerified = await verifyIncomingOtp(senderPhone, token);
 
-    if (user) {
-      // Generate a Stateful Short Magic Token (12 characters formatted)
-      const exchangeToken = generateHexCode();
-      const magicTokenExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    if (isVerified) {
+      console.info(`Login code for ${senderPhone} verified successfully!`);
 
-      await User.findByIdAndUpdate(user._id, {
-        $set: { magicToken: exchangeToken, magicTokenExpiresAt },
-        $unset: { loginToken: "", loginTokenExpiresAt: "" },
-      });
-
-      // Determine App URL
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-
-      const magicURL = `${appUrl}/auth/callback?token=${exchangeToken}`;
-      const replyText = getMagicLinkTemplate(magicURL);
-
-      // Send message back to user via Meta API using the centralized utility
+      const replyText = getLoginAckTemplate();
       await sendWhatsAppMessage(senderPhone, replyText);
-
-      console.log(`User ${user.displayName} logic magic link sent!`);
     } else {
-      console.log(`Login failed: Token ${token} not found or expired.`);
+      console.warn(
+        `Login verification failed for ${senderPhone}: Token not found or expired.`,
+      );
     }
-  } catch (dbError) {
+  } catch (error) {
     console.error(
       "Webhook Error: Error parsing login verification in DB:",
-      dbError,
+      error,
     );
   }
 }

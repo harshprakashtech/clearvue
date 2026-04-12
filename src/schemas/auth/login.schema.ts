@@ -1,28 +1,29 @@
 import { z } from "zod";
 
 // --- Auth Defination Imports ---
-import {
-  emailSchema,
-  passwordSchema,
-  phoneNumberSchema,
-} from "./definations.schema";
+import { passwordSchema, phoneNumberSchema } from "./definations.schema";
 
 /**
  * --- Login Schema ---
  *
  * - Login schema object to validate login input data
- * - Login can be done by either email or phone number
+ *
+ * Includes:
+ *  - Login with password
+ *  - Login with OTP
  */
 
-export const loginSchema = z
-  .object({
-    email: emailSchema.optional(),
-    phoneNumber: phoneNumberSchema.optional(),
-    password: passwordSchema.optional(),
-  })
-  .refine((data) => data.email || data.phoneNumber, {
-    message: "Zod ERR: Either email or phone number must be provided.",
-    path: ["identifier"], //
-  });
+// Password Login Schema
+export const loginWithPasswordSchema = z.object({
+  phoneNumber: phoneNumberSchema,
+  password: passwordSchema,
+});
 
-export type LoginSchema = z.infer<typeof loginSchema>;
+// OTP Login Schema
+export const loginWithOTPSchema = z.object({
+  phoneNumber: phoneNumberSchema,
+});
+
+// Schema Types
+export type LoginWithPasswordType = z.infer<typeof loginWithPasswordSchema>;
+export type LoginWithOTPType = z.infer<typeof loginWithOTPSchema>;

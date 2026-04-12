@@ -19,4 +19,4 @@ export const registerSchema = z.object({
   password: passwordSchema.optional(),
 });
 
-export type RegisterSchema = z.infer<typeof registerSchema>;
+export type RegisterType = z.infer<typeof registerSchema>;

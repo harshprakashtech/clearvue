@@ -3,22 +3,25 @@ import { NextResponse } from "next/server";
 
 // Utils
 import connectDB from "@/lib/db";
-import { generateHexCode } from "@/utils/codeGenerator.util";
 
 // Message Templates
-import { getRegisterTemplate } from "@/messages/register.message";
+import { getRegisterOtpTemplate } from "@/messages/otp.message";
 
 // Schemas
 import { registerSchema } from "@/schemas/auth/register.schema";
 
 // Models
 import User from "@/models/User.model";
+
+// Services
+import { generateOtp } from "@/services/otp.service";
+
 /**
  * --- Register API Route ---
  *
  * - Handles the initial registration request.
- * - Generates a verification token.
- * - Sends the verification token to the user's phone number via WhatsApp.
+ * - Generates a verification token via OTP.
+ * - Returns a WhatsApp link for the user to verify.
  */
 export async function POST(request: Request) {
   try {
@@ -50,13 +53,13 @@ export async function POST(request: Request) {
         );
       }
 
-      // User exists but not verified. Update them.
+      // Update basic info for unverified user
       user.displayName = displayName;
-
       if (password) {
         const salt = await bcrypt.genSalt(10);
         user.passwordHash = await bcrypt.hash(password, salt);
       }
+      await user.save();
     } else {
       let passwordHash;
 
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
       }
 
       // Create new user entry
-      user = new User({
+      user = await User.create({
         displayName,
         phoneNumber,
         passwordHash,
@@ -74,16 +77,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Generate a 12-character formatted secure token (e.g. A4B9-8F2D-C3E1)
-    const verificationToken = generateHexCode();
-
-    user.verificationToken = verificationToken;
-    await user.save();
+    // Generate a secure token for the Reverse OTP process via Service
+    const verificationToken = await generateOtp(phoneNumber, "registration");
 
     // Generate WhatsApp verification link
     const botNumber = process.env.META_PHONE_NUMBER;
 
-    const messageTemplate = getRegisterTemplate(verificationToken);
+    const messageTemplate = getRegisterOtpTemplate(verificationToken);
     const encodedMessage = encodeURIComponent(messageTemplate);
 
     const waLink = `https://wa.me/${botNumber}?text=${encodedMessage}`;
