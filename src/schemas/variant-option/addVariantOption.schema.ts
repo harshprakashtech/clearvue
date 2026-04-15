@@ -11,8 +11,9 @@ import { z } from "zod";
 export const addVariantOptionSchema = z.object({
   product: zObjectId,
   name: z.string().min(1, "Zod ERR: Variant option name is required."),
-  priority: z.number().min(0, "Zod ERR: Priority cannot be negative."),
+  displayType: z.enum(["swatch", "button", "dropdown"]),
+  priority: z.number().min(0, "Zod ERR: Priority cannot be less than 0."),
 });
 
 // --- Schema Types ---
-export type AddVariantOptionSchema = z.infer<typeof addVariantOptionSchema>;
+export type AddVariantOptionType = z.infer<typeof addVariantOptionSchema>;

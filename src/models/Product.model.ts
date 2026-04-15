@@ -11,11 +11,11 @@ import mongoose, { Document, Schema } from "mongoose";
 interface IProduct extends Document {
   name: string;
   description: string;
-  category: string;
+  category: mongoose.Types.ObjectId;
   genderCategory: "men" | "women" | "unisex";
   ageCategory: "adult" | "kids";
   slug: string;
-  tags: string[];
+  tags: string[]; // For tag based custom filters (e.g. "summer-sale")
   reviewCount: number;
   avgRating: number;
   isAvailable: boolean;
@@ -36,9 +36,8 @@ const ProductSchema: Schema<IProduct> = new Schema(
       required: [true, "Product description is required."],
     },
     category: {
-      type: String,
-      trim: true,
-      lowercase: true,
+      type: Schema.Types.ObjectId,
+      ref: "Category",
       required: [true, "Product category is required."],
     },
     genderCategory: {

@@ -14,6 +14,6 @@ export const addVariantOptionValueSchema = z.object({
 });
 
 // --- Schema Types ---
-export type AddVariantOptionValueSchema = z.infer<
+export type AddVariantOptionValueType = z.infer<
   typeof addVariantOptionValueSchema
 >;

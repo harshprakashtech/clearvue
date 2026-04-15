@@ -14,6 +14,4 @@ export const addVariantOptionMapSchema = z.object({
 });
 
 // --- Schema Types ---
-export type AddVariantOptionMapSchema = z.infer<
-  typeof addVariantOptionMapSchema
->;
+export type AddVariantOptionMapType = z.infer<typeof addVariantOptionMapSchema>;

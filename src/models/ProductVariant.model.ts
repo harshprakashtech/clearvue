@@ -36,22 +36,22 @@ const ProductVariantSchema: Schema<IProductVariant> = new Schema(
     originalPrice: {
       type: Number,
       required: [true, "Original price is required."],
-      min: [0, "Original price cannot be negative."],
+      min: [0, "Original price cannot be less than 0."],
     },
     sellingPrice: {
       type: Number,
       required: [true, "Selling price is required."],
-      min: [0, "Selling price cannot be negative."],
+      min: [0, "Selling price cannot be less than 0."],
     },
     regularDiscount: {
       type: Number, // in percentage
       required: [true, "Regular discount is required."],
-      min: [0, "Regular discount cannot be negative."],
+      min: [0, "Regular discount cannot be less than 0."],
     },
     inventoryQuantity: {
       type: Number,
       default: 0,
-      min: [0, "Inventory cannot be negative."],
+      min: [0, "Inventory cannot be less than 0."],
     },
     images: {
       type: [String], // Cloud URLs
