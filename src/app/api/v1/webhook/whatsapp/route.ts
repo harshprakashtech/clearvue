@@ -4,11 +4,11 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
-// Models
-import User from "@/models/User.model";
-
 // Message Templates
-import { getLoginAckTemplate, getRegisterAckTemplate } from "@/messages/ack.message";
+import {
+  getLoginAckTemplate,
+  getRegisterAckTemplate,
+} from "@/messages/ack.message";
 
 // Services
 import { verifyIncomingOtp } from "@/services/otp.service";

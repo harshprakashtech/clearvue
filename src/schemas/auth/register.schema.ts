@@ -16,7 +16,7 @@ export const registerSchema = z.object({
     .min(3, "Zod ERR: Display name must be at least 3 characters long")
     .max(30, "Zod ERR: Display name must be at most 30 characters long"),
   phoneNumber: phoneNumberSchema,
-  password: passwordSchema.optional(),
+  password: passwordSchema.optional().or(z.literal("")),
 });
 
 export type RegisterType = z.infer<typeof registerSchema>;
