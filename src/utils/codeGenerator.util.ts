@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 /**
- * --- Auth Utilities ---
+ * --- Auth Utility ---
  *
  * Helper functions for authentication.
  */

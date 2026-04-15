@@ -1,8 +1,12 @@
 import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
 
 // Utils
 import connectDB from "@/lib/db";
+import {
+  sendError,
+  sendSuccess,
+  sendValidationError,
+} from "@/utils/apiResponse.util";
 
 // Message Templates
 import { getRegisterOtpTemplate } from "@/messages/otp.message";
@@ -29,10 +33,7 @@ export async function POST(request: Request) {
     const result = registerSchema.safeParse(body); // Zod validation
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message, details: result.error.issues },
-        { status: 400 },
-      );
+      return sendValidationError(result.error.issues);
     }
 
     const { displayName, phoneNumber, password } = result.data;
@@ -44,12 +45,9 @@ export async function POST(request: Request) {
 
     if (user) {
       if (user.isVerified) {
-        return NextResponse.json(
-          {
-            error:
-              "Register Init Error: A user with this phone number is already verified.",
-          },
-          { status: 400 },
+        return sendError(
+          "Register Init Error: A user with this phone number is already verified.",
+          400,
         );
       }
 
@@ -89,13 +87,12 @@ export async function POST(request: Request) {
     const waLink = `https://wa.me/${botNumber}?text=${encodedMessage}`;
 
     // Return the verification token and WhatsApp link
-    return NextResponse.json({
-      success: true,
+    return sendSuccess({
       verificationToken,
       waLink,
     });
   } catch (err: any) {
     console.error("Register Init Error. ERR: ", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sendError(err.message, 500);
   }
 }

@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 import { z } from "zod";
 
-// Zod utility for Object ID validation
+/**
+ * --- Zod Validation Utility ---
+ *
+ * Helper function to validate mongoose object id in zod schemas
+ */
 export const zObjectId = z
   .string()
   .refine((val) => mongoose.Types.ObjectId.isValid(val), {

@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
-
 // Schemas
 import { loginWithOTPSchema } from "@/schemas/auth/login.schema";
 
 // Utils
 import connectDB from "@/lib/db";
+import {
+  sendError,
+  sendSuccess,
+  sendValidationError,
+} from "@/utils/apiResponse.util";
 
 // Message Templates
 import { getLoginOtpTemplate } from "@/messages/otp.message";
@@ -28,10 +31,7 @@ export async function POST(request: Request) {
     const result = loginWithOTPSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message, details: result.error.issues },
-        { status: 400 },
-      );
+      return sendValidationError(result.error.issues);
     }
 
     const { phoneNumber } = result.data;
@@ -42,10 +42,7 @@ export async function POST(request: Request) {
     const user = await User.findOne({ phoneNumber });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "OTP Login Error: User not found" },
-        { status: 404 },
-      );
+      return sendError("OTP Login Error: User not found", 404);
     }
 
     // Generate a secure token
@@ -59,13 +56,12 @@ export async function POST(request: Request) {
 
     const waLink = `https://wa.me/${botNumber}?text=${encodedMessage}`;
 
-    return NextResponse.json({
-      success: true,
+    return sendSuccess({
       loginToken,
       waLink,
     });
   } catch (err: any) {
     console.error("OTP Init Error. ERR: ", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sendError(err.message, 500);
   }
 }

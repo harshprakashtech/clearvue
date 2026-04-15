@@ -1,11 +1,15 @@
 import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
 
 // Schemas
 import { loginWithPasswordSchema } from "@/schemas/auth/login.schema";
 
 // Utils
 import connectDB from "@/lib/db";
+import {
+  sendError,
+  sendSuccess,
+  sendValidationError,
+} from "@/utils/apiResponse.util";
 import { setAuthCookies } from "@/utils/cookies.util";
 import { generateTokens, updateRefreshToken } from "@/utils/token.util";
 
@@ -25,13 +29,7 @@ export async function POST(request: Request) {
     const result = loginWithPasswordSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json(
-        {
-          error: result.error.issues[0].message,
-          details: result.error.issues,
-        },
-        { status: 400 },
-      );
+      return sendValidationError(result.error.issues);
     }
 
     const { phoneNumber, password } = result.data;
@@ -42,21 +40,13 @@ export async function POST(request: Request) {
     const user = await User.findOne({ phoneNumber });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          error: "Login Error: User not found",
-        },
-        { status: 404 },
-      );
+      return sendError("Login Error: User not found", 404);
     }
 
     if (!user.passwordHash) {
-      return NextResponse.json(
-        {
-          error:
-            "Login Error: User has not set up a password. Please login via OTP.",
-        },
-        { status: 400 },
+      return sendError(
+        "Login Error: User has not set up a password. Please login via OTP.",
+        400,
       );
     }
 
@@ -64,10 +54,7 @@ export async function POST(request: Request) {
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "Login Error: Invalid credentials" },
-        { status: 401 },
-      );
+      return sendError("Login Error: Invalid credentials", 401);
     }
 
     const jwtSecret = process.env.JWT_SECRET;
@@ -83,8 +70,7 @@ export async function POST(request: Request) {
     await updateRefreshToken(user._id, refreshToken);
 
     // Create response
-    const response = NextResponse.json({
-      success: true,
+    const response = sendSuccess({
       user: {
         id: user._id,
         displayName: user.displayName,
@@ -97,6 +83,6 @@ export async function POST(request: Request) {
     return setAuthCookies(response, { accessToken, refreshToken });
   } catch (err: any) {
     console.error("Login Error. ERR: ", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sendError(err.message, 500);
   }
 }

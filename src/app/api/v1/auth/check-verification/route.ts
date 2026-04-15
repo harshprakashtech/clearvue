@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
-
 // Utils
 import connectDB from "@/lib/db";
+import { sendError, sendSuccess } from "@/utils/apiResponse.util";
 import { setAuthCookies } from "@/utils/cookies.util";
 
 // Services
@@ -22,11 +21,9 @@ export async function GET(request: Request) {
     const type = searchParams.get("type") as "registration" | "login";
 
     if (!phoneNumber || !type) {
-      return NextResponse.json(
-        {
-          error: "Check Verification Error: Phone number and type are required",
-        },
-        { status: 400 },
+      return sendError(
+        "Check Verification Error: Phone number and type are required",
+        400,
       );
     }
 
@@ -37,8 +34,7 @@ export async function GET(request: Request) {
 
     if (result.verified) {
       // Create response and set auth cookies
-      const response = NextResponse.json({
-        success: true,
+      const response = sendSuccess({
         isVerified: true,
         user: result.user,
       });
@@ -50,13 +46,12 @@ export async function GET(request: Request) {
       return response;
     } else {
       // Still pending
-      return NextResponse.json({
-        success: true,
+      return sendSuccess({
         isVerified: false,
       });
     }
   } catch (err: any) {
     console.error("Check Verification Error. ERR: ", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sendError(err.message, 500);
   }
 }

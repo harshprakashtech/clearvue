@@ -2,7 +2,7 @@ import User from "@/models/User.model";
 import jwt from "jsonwebtoken";
 
 /**
- * --- Auth Token Utilities ---
+ * --- Auth Token Utility ---
  *
  * Helper functions for generating JWT tokens.
  */

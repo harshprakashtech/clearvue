@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 /**
- * --- Cookie Utilities ---
+ * --- Cookie Utility ---
  * Helper functions to attach or clear auth cookies on Next.js responses.
  */
 
