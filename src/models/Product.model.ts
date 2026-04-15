@@ -15,6 +15,7 @@ interface IProduct extends Document {
   genderCategory: "men" | "women" | "unisex";
   ageCategory: "adult" | "kids";
   slug: string;
+  tags: string[];
   reviewCount: number;
   avgRating: number;
   isAvailable: boolean;
@@ -59,6 +60,11 @@ const ProductSchema: Schema<IProduct> = new Schema(
       trim: true,
       lowercase: true,
       required: [true, "Product slug is required."],
+    },
+    tags: {
+      type: [String],
+      default: [],
+      lowercase: true,
     },
     reviewCount: {
       type: Number,

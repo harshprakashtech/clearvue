@@ -15,6 +15,7 @@ interface IProductVariant extends Document {
   regularDiscount: number;
   inventoryQuantity: number;
   images: string[]; // Cloud URLs
+  swatchImage?: string; // Small square thumbnail for colour picker
   isAvailable: boolean;
 }
 
@@ -55,6 +56,10 @@ const ProductVariantSchema: Schema<IProductVariant> = new Schema(
     images: {
       type: [String], // Cloud URLs
       default: [],
+    },
+    swatchImage: {
+      type: String, // Small square thumbnail for colour picker
+      default: null,
     },
     isAvailable: {
       type: Boolean,

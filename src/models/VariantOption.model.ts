@@ -11,6 +11,7 @@ import mongoose, { Document, Schema } from "mongoose";
 interface IVariantOption extends Document {
   product: mongoose.Types.ObjectId;
   name: string;
+  displayType: "swatch" | "button" | "dropdown";
   priority: number;
 }
 
@@ -27,6 +28,11 @@ const VariantOptionSchema: Schema<IVariantOption> = new Schema(
       trim: true,
       lowercase: true,
       required: [true, "Product option name is required."],
+    },
+    displayType: {
+      type: String,
+      enum: ["swatch", "button", "dropdown"],
+      required: [true, "Display type is required."],
     },
     priority: {
       type: Number,
