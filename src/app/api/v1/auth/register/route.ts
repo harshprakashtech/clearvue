@@ -6,6 +6,7 @@ import {
   sendSuccess,
   sendValidationError,
 } from "@/utils/apiResponse.util";
+import { withLogging } from "@/utils/apiLogger.util";
 
 // Schemas
 import { registerSchema } from "@/schemas/auth/register.schema";
@@ -16,7 +17,7 @@ import { registerUser } from "@/services/auth.service";
 /**
  * --- Register API Route ---
  */
-export async function POST(request: Request) {
+export const POST = withLogging(async (request: Request) => {
   try {
     const body = await request.json();
     const result = registerSchema.safeParse(body); // Zod validation
@@ -38,4 +39,4 @@ export async function POST(request: Request) {
       err.message.includes("already verified") ? 400 : 500,
     );
   }
-}
+});

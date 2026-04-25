@@ -1,5 +1,6 @@
 import path from "path";
 import winston from "winston";
+import { logContext } from "@/lib/asyncLocalStorage";
 
 /**
  * --- Logger Configuration ---
@@ -31,8 +32,9 @@ const customFormat = winston.format.printf(
     stack,
     ...meta
   }: Record<string, any>) => {
-    const user = userId || "ANONYMOUS";
-    const ipAddr = ip || "UNKNOWN";
+    const context = logContext.getStore();
+    const user = userId || context?.userId || "ANONYMOUS";
+    const ipAddr = ip || context?.ip || "UNKNOWN";
     const metaStr = Object.keys(meta).length
       ? ` | ${JSON.stringify(meta)}`
       : "";
@@ -66,33 +68,35 @@ export const logger = winston.createLogger({
       ),
     }),
 
-    // Info logs
+    // Info logs (only 'info' level)
     new winston.transports.File({
       filename: path.join(logsDir, "info.log"),
       level: "info",
       maxsize: 20971520, // 20MB
       maxFiles: 5,
       format: winston.format.combine(
+        winston.format((info) => (info.level === "info" ? info : false))(),
         winston.format.timestamp({ format: istTimestamp }),
         winston.format.errors({ stack: true }),
         customFormat,
       ),
     }),
 
-    // Warnings
+    // Warnings (only 'warn' level)
     new winston.transports.File({
       filename: path.join(logsDir, "warn.log"),
       level: "warn",
       maxsize: 20971520,
       maxFiles: 5,
       format: winston.format.combine(
+        winston.format((info) => (info.level === "warn" ? info : false))(),
         winston.format.timestamp({ format: istTimestamp }),
         winston.format.errors({ stack: true }),
         customFormat,
       ),
     }),
 
-    // Errors
+    // Errors (error level and above, which is just error)
     new winston.transports.File({
       filename: path.join(logsDir, "error.log"),
       level: "error",

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { withLogging } from "@/utils/apiLogger.util";
 
 // Message Templates
 import {
@@ -29,7 +30,7 @@ import { verifyIncomingOtp } from "@/services/otp.service";
  * - Responds with 200 OK and challenge token from the request if verify tokens match.
  * - Responds with '403 Forbidden' if verify tokens do not match.
  */
-export async function GET(req: Request) {
+export const GET = withLogging(async (req: Request) => {
   const { searchParams } = new URL(req.url);
 
   const mode = searchParams.get("hub.mode");
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
   } else {
     return new NextResponse("Forbidden", { status: 403 });
   }
-}
+});
 
 // Handle Register Verification
 async function handleRegisterVerification(
@@ -121,7 +122,7 @@ async function handleLoginVerification(
  * - Handles POST requests to the webhook endpoint.
  * - Processes incoming WhatsApp messages and events.
  */
-export async function POST(request: Request) {
+export const POST = withLogging(async (request: Request) => {
   try {
     const body = await request.json();
 
@@ -158,4 +159,4 @@ export async function POST(request: Request) {
     logger.error("Webhook processing error:", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
-}
+});

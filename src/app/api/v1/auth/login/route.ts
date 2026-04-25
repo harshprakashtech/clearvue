@@ -9,6 +9,7 @@ import {
   sendValidationError,
 } from "@/utils/apiResponse.util";
 import { setAuthCookies } from "@/utils/cookies.util";
+import { withLogging } from "@/utils/apiLogger.util";
 
 // Services
 import { loginUserWithPassword } from "@/services/auth.service";
@@ -16,7 +17,7 @@ import { loginUserWithPassword } from "@/services/auth.service";
 /**
  * --- Login API Route ---
  */
-export async function POST(request: Request) {
+export const POST = withLogging(async (request: Request) => {
   try {
     const body = await request.json();
     const result = loginWithPasswordSchema.safeParse(body);
@@ -50,4 +51,4 @@ export async function POST(request: Request) {
 
     return sendError(err.message, status);
   }
-}
+});

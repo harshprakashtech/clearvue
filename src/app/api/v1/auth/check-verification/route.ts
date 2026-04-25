@@ -3,6 +3,7 @@ import connectDB from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { sendError, sendSuccess } from "@/utils/apiResponse.util";
 import { setAuthCookies } from "@/utils/cookies.util";
+import { withLogging } from "@/utils/apiLogger.util";
 
 // Services
 import { checkVerificationStatus } from "@/services/otp.service";
@@ -15,7 +16,7 @@ import { checkVerificationStatus } from "@/services/otp.service";
  *    - Performs auto-login by issuing JWT tokens.
  *    - Burns the OTP record.
  */
-export async function GET(request: Request) {
+export const GET = withLogging(async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const phoneNumber = searchParams.get("phoneNumber");
@@ -55,4 +56,4 @@ export async function GET(request: Request) {
     logger.error("Check Verification Error. ERR: ", err);
     return sendError(err.message, 500);
   }
-}
+});

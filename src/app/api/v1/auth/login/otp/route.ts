@@ -9,6 +9,7 @@ import {
   sendSuccess,
   sendValidationError,
 } from "@/utils/apiResponse.util";
+import { withLogging } from "@/utils/apiLogger.util";
 
 // Message Templates
 import { getLoginOtpTemplate } from "@/messages/otp.message";
@@ -26,7 +27,7 @@ import { generateOtp } from "@/services/otp.service";
  * - Generates a secure token for the Reverse OTP flow
  * - Returns the WhatsApp link for the user to message the bot
  */
-export async function POST(request: Request) {
+export const POST = withLogging(async (request: Request) => {
   try {
     const body = await request.json();
     const result = loginWithOTPSchema.safeParse(body);
@@ -65,4 +66,4 @@ export async function POST(request: Request) {
     logger.error("OTP Init Error. ERR: ", err);
     return sendError(err.message, 500);
   }
-}
+});
