@@ -10,12 +10,12 @@ import {
 import { generateHexCode } from "@/utils/codeGenerator.util";
 import { generateTokens, updateRefreshToken } from "@/utils/token.util";
 
-// Models
-import Otp from "@/models/Otp.model";
-import User from "@/models/User.model";
+// Repositories
+import { otpRepo } from "@/repositories/otp.repo";
+import { userRepo } from "@/repositories/user.repo";
 
 /**
- * OTP related services
+ * --- OTP Service ---
  *
  * Includes:
  * - generateOtp: Generates OTP for a given phone number and type
@@ -47,22 +47,23 @@ export async function generateOtp(
 
     // Check if user exists for login
     if (type === "login") {
-      const user = await User.findOne({ phoneNumber: normalizedPhone });
+      const user = await userRepo.findByPhoneNumber(normalizedPhone);
+
       if (!user) throw new Error("User not found");
       if (!user.isVerified)
         throw new Error("User is not verified. Please register first.");
     }
 
     // Delete any old pending OTPs for this phone and type to keep DB clean
-    await Otp.deleteMany({ phoneNumber: normalizedPhone, type });
+    await otpRepo.deleteManyByPhoneNumber(normalizedPhone, type);
 
     const plainOtp: string = generateHexCode();
     const hashedOtp: string = await bcrypt.hash(plainOtp, 10);
 
     // Get user id if exists
-    const user = await User.findOne({ phoneNumber: normalizedPhone });
+    const user = await userRepo.findByPhoneNumber(normalizedPhone);
 
-    await Otp.create({
+    await otpRepo.create({
       user: user?._id,
       phoneNumber: normalizedPhone,
       hashedOtp,
@@ -89,7 +90,7 @@ export async function verifyIncomingOtp(
     const normalizedSender = normalizePhone(senderPhone);
 
     // Find all active OTPs for this phone number
-    const activeOtps = await Otp.find({
+    const activeOtps = await otpRepo.find({
       phoneNumber: normalizedSender,
       isVerified: false,
       expiresAt: { $gt: new Date() },
@@ -98,8 +99,7 @@ export async function verifyIncomingOtp(
     for (const otp of activeOtps) {
       const isMatch = await bcrypt.compare(plainOtp, otp.hashedOtp);
       if (isMatch) {
-        otp.isVerified = true;
-        await otp.save();
+        await otpRepo.update(otp._id.toString(), { isVerified: true });
         return true;
       }
     }
@@ -121,30 +121,37 @@ export async function checkVerificationStatus(
   try {
     const normalizedPhone = normalizePhone(phoneNumber);
 
-    const otp = await Otp.findOne({
-      phoneNumber: normalizedPhone,
-      type,
-      isVerified: true,
-      expiresAt: { $gt: new Date() },
-    }).populate("user");
+    const otps = await otpRepo.find(
+      {
+        phoneNumber: normalizedPhone,
+        type,
+        isVerified: true,
+        expiresAt: { $gt: new Date() },
+      },
+      [] // Pass empty array to prevent populating the user field
+    );
 
-    if (!otp) return { verified: false };
+    if (!otps || otps.length === 0) return { verified: false };
+    
+    const otp = otps[0];
 
-    const user = await User.findById(otp.user);
+    const user = await userRepo.findById(otp.user.toString());
     if (!user) throw new Error("User not found during verification check");
 
     // 1. Mark user verified if this was a registration
     if (type === "registration" && !user.isVerified) {
-      user.isVerified = true;
-      await user.save();
+      await userRepo.update(user._id.toString(), { isVerified: true });
     }
 
     // 2. Generate Session Tokens (Auto-login for both)
-    const { accessToken, refreshToken } = generateTokens(user._id, user.role);
-    await updateRefreshToken(user._id, refreshToken);
+    const { accessToken, refreshToken } = generateTokens(
+      user._id.toString(),
+      user.role,
+    );
+    await updateRefreshToken(user._id.toString(), refreshToken);
 
     // 3. Burn the OTP immediately (One-time use)
-    await Otp.findByIdAndDelete(otp._id);
+    await otpRepo.delete(otp._id.toString());
 
     return {
       verified: true,

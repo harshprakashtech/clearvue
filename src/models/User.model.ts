@@ -8,7 +8,7 @@ import mongoose, { Document, Schema } from "mongoose";
  */
 
 // User interface
-interface IUser extends Document {
+export interface IUser extends Document {
   displayName: string;
   email?: string;
   phoneNumber: string;

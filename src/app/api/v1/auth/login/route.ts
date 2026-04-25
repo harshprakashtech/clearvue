@@ -1,6 +1,3 @@
-import bcrypt from "bcryptjs";
-
-// Schemas
 import { loginWithPasswordSchema } from "@/schemas/auth/login.schema";
 
 // Utils
@@ -11,17 +8,12 @@ import {
   sendValidationError,
 } from "@/utils/apiResponse.util";
 import { setAuthCookies } from "@/utils/cookies.util";
-import { generateTokens, updateRefreshToken } from "@/utils/token.util";
 
-// Models
-import User from "@/models/User.model";
+// Services
+import { loginUserWithPassword } from "@/services/auth.service";
 
 /**
  * --- Login API Route ---
- *
- * - Handles user login requests
- * - Validates user credentials (via password)
- * - Generates JWT token for authenticated users
  */
 export async function POST(request: Request) {
   try {
@@ -32,57 +24,29 @@ export async function POST(request: Request) {
       return sendValidationError(result.error.issues);
     }
 
-    const { phoneNumber, password } = result.data;
-
     await connectDB();
 
-    // Find user by phone number
-    const user = await User.findOne({ phoneNumber });
-
-    if (!user) {
-      return sendError("Login Error: User not found", 404);
-    }
-
-    if (!user.passwordHash) {
-      return sendError(
-        "Login Error: User has not set up a password. Please login via OTP.",
-        400,
-      );
-    }
-
-    // Check if password is valid
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isValidPassword) {
-      return sendError("Login Error: Invalid credentials", 401);
-    }
-
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      throw new Error("Login Error: JWT Secret is missing.");
-    }
-
-    // Generate Long-Lived Tokens via Utility
-    const { accessToken, refreshToken } = generateTokens(user._id, user.role);
-
-    // Update the refresh token in DB
-    await updateRefreshToken(user._id, refreshToken);
+    const { user, accessToken, refreshToken } = await loginUserWithPassword(
+      result.data,
+    );
 
     // Create response
-    const response = sendSuccess({
-      user: {
-        id: user._id,
-        displayName: user.displayName,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-      },
-    });
+    const response = sendSuccess({ user });
 
     // Set auth cookies and return response
     return setAuthCookies(response, { accessToken, refreshToken });
   } catch (err: any) {
     console.error("Login Error. ERR: ", err);
-    return sendError(err.message, 500);
+
+    // Determine status based on error message
+    let status = 500;
+    if (err.message.includes("not found")) status = 404;
+    else if (
+      err.message.includes("Invalid credentials") ||
+      err.message.includes("login via OTP")
+    )
+      status = 400;
+
+    return sendError(err.message, status);
   }
 }
