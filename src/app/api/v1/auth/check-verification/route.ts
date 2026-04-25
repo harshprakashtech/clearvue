@@ -1,5 +1,6 @@
 // Utils
 import connectDB from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { sendError, sendSuccess } from "@/utils/apiResponse.util";
 import { setAuthCookies } from "@/utils/cookies.util";
 
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
       });
     }
   } catch (err: any) {
-    console.error("Check Verification Error. ERR: ", err);
+    logger.error("Check Verification Error. ERR: ", err);
     return sendError(err.message, 500);
   }
 }

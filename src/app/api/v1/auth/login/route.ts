@@ -2,6 +2,7 @@ import { loginWithPasswordSchema } from "@/schemas/auth/login.schema";
 
 // Utils
 import connectDB from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   sendError,
   sendSuccess,
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     // Set auth cookies and return response
     return setAuthCookies(response, { accessToken, refreshToken });
   } catch (err: any) {
-    console.error("Login Error. ERR: ", err);
+    logger.error("Login Error. ERR: ", err);
 
     // Determine status based on error message
     let status = 500;

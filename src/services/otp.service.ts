@@ -7,6 +7,7 @@ import {
 } from "@/schemas/auth/definations.schema";
 
 // Utils
+import { logger } from "@/lib/logger";
 import { generateHexCode } from "@/utils/codeGenerator.util";
 import { generateTokens, updateRefreshToken } from "@/utils/token.util";
 
@@ -71,7 +72,7 @@ export async function generateOtp(
       isVerified: false,
     });
 
-    console.info(`OTP generated successfully for ${normalizedPhone}`);
+    logger.info(`OTP generated successfully for ${normalizedPhone}`);
     return plainOtp;
   } catch (err) {
     if (err instanceof Error) throw new Error(err.message);
@@ -106,7 +107,7 @@ export async function verifyIncomingOtp(
 
     return false;
   } catch (err) {
-    console.error("Verify OTP Error. ERR:", err);
+    logger.error("Verify OTP Error. ERR:", err);
     return false;
   }
 }
@@ -128,11 +129,11 @@ export async function checkVerificationStatus(
         isVerified: true,
         expiresAt: { $gt: new Date() },
       },
-      [] // Pass empty array to prevent populating the user field
+      [], // Pass empty array to prevent populating the user field
     );
 
     if (!otps || otps.length === 0) return { verified: false };
-    
+
     const otp = otps[0];
 
     const user = await userRepo.findById(otp.user.toString());
@@ -164,7 +165,7 @@ export async function checkVerificationStatus(
       },
     };
   } catch (err) {
-    console.error("Check Verification Status Error. ERR:", err);
+    logger.error("Check Verification Status Error. ERR:", err);
     throw err;
   }
 }

@@ -59,10 +59,10 @@ export const logger = winston.createLogger({
     // Console transport (all levels)
     new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.colorize(),
         winston.format.timestamp({ format: istTimestamp }),
         winston.format.errors({ stack: true }),
         customFormat,
+        winston.format.colorize({ all: true }),
       ),
     }),
 

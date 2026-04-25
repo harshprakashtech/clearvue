@@ -1,5 +1,6 @@
 // Utils
 import connectDB from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   sendError,
   sendSuccess,
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     // Return the verification token and WhatsApp link
     return sendSuccess(data);
   } catch (err: any) {
-    console.error("Register Init Error. ERR: ", err);
+    logger.error("Register Init Error. ERR: ", err);
     return sendError(
       err.message,
       err.message.includes("already verified") ? 400 : 500,

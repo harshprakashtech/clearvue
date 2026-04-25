@@ -3,6 +3,7 @@ import { loginWithOTPSchema } from "@/schemas/auth/login.schema";
 
 // Utils
 import connectDB from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   sendError,
   sendSuccess,
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
       waLink,
     });
   } catch (err: any) {
-    console.error("OTP Init Error. ERR: ", err);
+    logger.error("OTP Init Error. ERR: ", err);
     return sendError(err.message, 500);
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import axios from "axios";
 
 /**
@@ -32,17 +33,16 @@ export async function sendWhatsAppMessage(to: string, message: string) {
       },
     });
 
-    console.log("WhatsApp API Response: ", response);
     const data = response.data;
 
     if (response.status !== 200) {
-      console.error("WhatsApp API Error:", data);
+      logger.error("WhatsApp API Error:", data);
       throw new Error(data.error?.message || "Failed to send message");
     }
 
     return data;
   } catch (err) {
-    console.error("Error sending WhatsApp message:", err);
+    logger.error("Error sending WhatsApp message:", err);
     throw err;
   }
 }

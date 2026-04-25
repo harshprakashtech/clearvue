@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 // Utils
 import connectDB from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 // Message Templates
@@ -64,19 +65,19 @@ async function handleRegisterVerification(
     const isVerified = await verifyIncomingOtp(senderPhone, token);
 
     if (isVerified) {
-      console.info(
+      logger.info(
         `User with phone ${senderPhone} verified successfully via WhatsApp!`,
       );
 
       const replyText = getRegisterAckTemplate();
       await sendWhatsAppMessage(senderPhone, replyText);
     } else {
-      console.warn(
+      logger.warn(
         `Verification failed for ${senderPhone}: Token not found or expired.`,
       );
     }
   } catch (error) {
-    console.error("Webhook Error: Error verifying registration in DB:", error);
+    logger.error("Webhook Error: Error verifying registration in DB:", error);
   }
 }
 
@@ -97,17 +98,17 @@ async function handleLoginVerification(
     const isVerified = await verifyIncomingOtp(senderPhone, token);
 
     if (isVerified) {
-      console.info(`Login code for ${senderPhone} verified successfully!`);
+      logger.info(`Login code for ${senderPhone} verified successfully!`);
 
       const replyText = getLoginAckTemplate();
       await sendWhatsAppMessage(senderPhone, replyText);
     } else {
-      console.warn(
+      logger.warn(
         `Login verification failed for ${senderPhone}: Token not found or expired.`,
       );
     }
   } catch (error) {
-    console.error(
+    logger.error(
       "Webhook Error: Error parsing login verification in DB:",
       error,
     );
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
             const senderPhone = msg.from;
             const messageText = msg.text?.body;
 
-            console.log(`Received message from ${senderPhone}: ${messageText}`);
+            logger.info(`Received message from ${senderPhone}: ${messageText}`);
 
             // Handle register verification messages
             if (messageText?.includes("Clearvue Registration")) {
@@ -154,7 +155,7 @@ export async function POST(request: Request) {
       return new NextResponse("Not Found", { status: 404 });
     }
   } catch (err) {
-    console.error("Webhook processing error:", err);
+    logger.error("Webhook processing error:", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
